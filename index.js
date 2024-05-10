@@ -28,8 +28,30 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    // MongoDB Collections
+    const blogsCollection = client.db('ScribbleDB').collection('Blogs');
 
+    // Auth Related API
+
+
+    // Services Related API
+    app.get('/', async(req, res) =>{
+        res.send('Scribble Server Is Running...')
+    })
     
+    // Post a new blog 
+    app.post('/post', async(req, res)=>{
+        const blog = req.body;
+        const result = blogsCollection.insertOne(blog);
+        res.send(result)
+    })
+
+    // Get all posted blogs data from DB
+    app.get('/blogs', async(req, res)=>{
+        const blogs = blogsCollection.find();
+        const result = await blogs.toArray();
+        res.send(result)
+    })
 
 
     // Send a ping to confirm a successful connection
@@ -37,7 +59,7 @@ async function run() {
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
-    await client.close();
+    // await client.close();
   }
 }
 run().catch(console.dir);
