@@ -58,6 +58,7 @@ async function run() {
         // MongoDB Collections
         const blogsCollection = client.db('ScribbleDB').collection('Blogs');
         const commentsCollection = client.db('ScribbleDB').collection('Comments');
+        const wishlistCollection = client.db('ScribbleDB').collection('Wishlist');
 
         // ----------------Auth Related API-----------------------
         // Create token and save to client side cookie.
@@ -108,7 +109,19 @@ async function run() {
             const id = req.query.id
             const query = {_id : new ObjectId(id)}
             const result = await blogsCollection.findOne(query)
-            console.log(result);
+            res.send(result)
+        })
+
+        // Update blog data in DB
+        app.put('/blog/update', async (req, res) => {
+            const id = req.query.id
+            const query = {_id : new ObjectId(id)}
+            const options = { upsert: true };
+            const updateBlog = req.body;
+            const blog = {
+                $set : {...updateBlog}
+            }
+            const result = await blogsCollection.updateOne(query, blog, options)
             res.send(result)
         })
         
@@ -121,10 +134,20 @@ async function run() {
 
         // Get all comments data from DB
         app.get('/comments', async (req, res) => {
-            const commnets = commentsCollection.find();
+            const id = req.query.id;
+            const query = {blogId : id}
+            const commnets = commentsCollection.find(query);
             const result = await commnets.toArray();
             res.send(result)
         })
+
+        // Blog added in wishlist
+        app.post('/wishlist', async (req, res) => {
+            const item = req.body;
+            const result = wishlistCollection.insertOne(item);
+            res.send(result)
+        })
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
