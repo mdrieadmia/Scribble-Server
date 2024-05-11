@@ -141,10 +141,26 @@ async function run() {
             res.send(result)
         })
 
-        // Blog added in wishlist
+        // Blog added in wishlist db
         app.post('/wishlist', async (req, res) => {
             const item = req.body;
-            const result = wishlistCollection.insertOne(item);
+            const result = await wishlistCollection.insertOne(item);
+            res.send(result)
+        })
+
+        // Get wishlist data from db
+        app.get('/wishlist', async (req, res) => {
+            const email = req.query.email;
+            const query = {email}
+            const result = await wishlistCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        // Delete wishlist item from db
+        app.delete('/wishlist/delete', async(req, res)=>{
+            const id = req.query.id
+            const query = {_id : new ObjectId(id)}
+            const result = await wishlistCollection.deleteOne(query);
             res.send(result)
         })
 
