@@ -33,16 +33,20 @@ const client = new MongoClient(uri, {
 });
 
 const verifyToken = (req, res, next) => {
-    const token = req.cookies.token;
+    const token = req?.cookies?.token;
     if (!token) {
         return res.status(401).send({ message: "Unauthorized Access" })
     }
+
+    console.log("Token in verify token : ", token);
+
     if (token) {
         jwt.verify(token, process.env.Access_Token, (err, decoded) => {
             if (err) {
                 return res.status(401).send({ message: "Unauthorized Access" })
             }
             else {
+                console.log(decoded);
                 req.user = decoded;
                 next()
             }
@@ -96,18 +100,28 @@ async function run() {
             const result = blogsCollection.insertOne(blog);
             res.send(result)
         })
-        
+
         // Get all posted blogs data from DB
         app.get('/blogs', async (req, res) => {
-            const blogs = blogsCollection.find();
+            const filter = req.query.filter || "";
+            const search = req.query.search || "";
+            let query = {
+                title: { $regex: search, $options: 'i' }
+            }
+            if (filter) {
+                query = { ...query, category: filter }
+            }
+
+            const blogs = blogsCollection.find(query);
             const result = await blogs.toArray();
             res.send(result)
+
         })
 
         // Get blog details data from DB
         app.get('/blog/details', async (req, res) => {
             const id = req.query.id
-            const query = {_id : new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await blogsCollection.findOne(query)
             res.send(result)
         })
@@ -115,16 +129,16 @@ async function run() {
         // Update blog data in DB
         app.put('/blog/update', async (req, res) => {
             const id = req.query.id
-            const query = {_id : new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const options = { upsert: true };
             const updateBlog = req.body;
             const blog = {
-                $set : {...updateBlog}
+                $set: { ...updateBlog }
             }
             const result = await blogsCollection.updateOne(query, blog, options)
             res.send(result)
         })
-        
+
         // Save comment in DB
         app.post('/comments', async (req, res) => {
             const comment = req.body;
@@ -135,7 +149,7 @@ async function run() {
         // Get all comments data from DB
         app.get('/comments', async (req, res) => {
             const id = req.query.id;
-            const query = {blogId : id}
+            const query = { blogId: id }
             const commnets = commentsCollection.find(query);
             const result = await commnets.toArray();
             res.send(result)
@@ -149,18 +163,32 @@ async function run() {
         })
 
         // Get wishlist data from db
-        app.get('/wishlist', async (req, res) => {
-            const email = req.query.email;
-            const query = {email}
+        app.get('/wishlist', verifyToken, async (req, res) => {
+            const email = req.query.email
+            const verifiedUser = req.user.email;
+            console.log("Logged in user :", email);
+            console.log("verified user :", verifiedUser);
+
+            if(verifiedUser !== email ){
+              return res.status(403).send({message : "Forbidden Access"})
+            }
+            const query = { email }
             const result = await wishlistCollection.find(query).toArray();
             res.send(result)
         })
 
         // Delete wishlist item from db
-        app.delete('/wishlist/delete', async(req, res)=>{
+        app.delete('/wishlist/delete', async (req, res) => {
             const id = req.query.id
-            const query = {_id : new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await wishlistCollection.deleteOne(query);
+            res.send(result)
+        })
+
+        // Get Recent Post Data From DB
+        app.get('/recent', async (req, res) => {
+            const blogs = blogsCollection.find().sort({ date: -1 })
+            const result = await blogs.toArray()
             res.send(result)
         })
 
