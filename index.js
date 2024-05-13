@@ -95,7 +95,13 @@ async function run() {
         })
 
         // Post a new blog 
-        app.post('/post', async (req, res) => {
+        app.post('/post', verifyToken, async (req, res) => {
+            const email = req.query.email
+            const verifiedUser = req.user.email;
+            if(verifiedUser !== email ){
+              return res.status(403).send({message : "Forbidden Access"})
+            }
+
             const blog = req.body;
             const result = blogsCollection.insertOne(blog);
             res.send(result)
@@ -103,6 +109,28 @@ async function run() {
 
         // Get all posted blogs data from DB
         app.get('/blogs', async (req, res) => {
+            const filter = req.query.filter || "";
+            const search = req.query.search || "";
+            let query = {
+                title: { $regex: search, $options: 'i' }
+            }
+            if (filter) {
+                query = { ...query, category: filter }
+            }
+
+            const blogs = blogsCollection.find(query);
+            const result = await blogs.toArray();
+            res.send(result)
+
+        })
+
+        app.get('/featured', verifyToken,  async (req, res) => {
+            const email = req.query.email
+            const verifiedUser = req.user.email;
+            if(verifiedUser !== email ){
+              return res.status(403).send({message : "Forbidden Access"})
+            }
+
             const filter = req.query.filter || "";
             const search = req.query.search || "";
             let query = {
@@ -166,8 +194,6 @@ async function run() {
         app.get('/wishlist', verifyToken, async (req, res) => {
             const email = req.query.email
             const verifiedUser = req.user.email;
-            console.log("Logged in user :", email);
-            console.log("verified user :", verifiedUser);
 
             if(verifiedUser !== email ){
               return res.status(403).send({message : "Forbidden Access"})
