@@ -2,3 +2,4 @@
 .env.local
 .vscode
 .env
+.vercel

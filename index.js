@@ -9,7 +9,7 @@ const port = process.env.PORT || 5000;
 
 // Middleware
 const corsOptions = {
-    origin: ["https://scribblebd.netlify.app"],
+    origin: ["https://scribblebd.netlify.app", "http://localhost:5173"],
     credentials: true,
     optionSuccessStatus: 200,
 }
@@ -64,23 +64,21 @@ async function run() {
         // Create token and save to client side cookie.
         app.post('/jwt', async (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.Access_Token, { expiresIn: '1d' })
+            const token = jwt.sign(user, process.env.Access_Token, { expiresIn: '1h' })
             res.cookie('token', token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
+                secure: process.env.NODE_ENV === "production",
                 sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
             })
                 .send({ success: true })
         })
 
         // Remove token from cookie after logout an user
-        app.get('/logout', (req, res) => {
-            res
-                .clearCookie('token', {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-                    maxAge: 0,
+        app.post('/logout', (req, res) => {
+            res.clearCookie('token', {
+                    maxAge :0,
+                    secure: true,
+                    sameSite: "none",
                 })
                 .send({ success: true })
         })
