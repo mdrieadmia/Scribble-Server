@@ -34,15 +34,12 @@ const verifyToken = (req, res, next) => {
         return res.status(401).send({ message: "Unauthorized Access" })
     }
 
-    console.log("Token in verify token : ", token);
-
     if (token) {
         jwt.verify(token, process.env.Access_Token, (err, decoded) => {
             if (err) {
                 return res.status(401).send({ message: "Unauthorized Access" })
             }
             else {
-                console.log(decoded);
                 req.user = decoded;
                 next()
             }
